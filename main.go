@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"embed"
 	"fmt"
+	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"github.com/cloudlena/adapters/logging"
 	"github.com/cloudlena/s3manager/internal/app/s3manager"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/viper"
@@ -41,6 +43,92 @@ type configuration struct {
 	Timeout             int32
 	SseType             string
 	SseKey              string
+}
+
+var (
+	store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+)
+
+type formData struct {
+	ErrorMsg string
+}
+
+func getCredentials() (string, string) {
+	return os.Getenv("USER"), os.Getenv("PASSWORD")
+}
+
+func unauthorized(w http.ResponseWriter) {
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+}
+
+func SessionAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/login" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		session, err := store.Get(r, "auth-session")
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func HandleLoginView(templates fs.FS) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var errMsg string
+
+		if r.Method == http.MethodPost {
+			r.ParseForm()
+			username := r.FormValue("username")
+			password := r.FormValue("password")
+
+			expectedUser, expectedPass := getCredentials()
+			if username == expectedUser && password == expectedPass {
+				session, _ := store.Get(r, "auth-session")
+				session.Values["authenticated"] = true
+				if err := session.Save(r, w); err != nil {
+					http.Error(w, "Failed to save session", http.StatusInternalServerError)
+					return
+				}
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			} else {
+				errMsg = "Invalid username or password"
+			}
+		}
+
+		renderLoginTemplate(w, templates, formData{ErrorMsg: errMsg})
+	}
+}
+
+func renderLoginTemplate(w http.ResponseWriter, templates fs.FS, data formData) {
+	t, err := template.ParseFS(templates, "layout.html.tmpl", "login.html.tmpl")
+	if err != nil {
+		handleHTTPError(w, fmt.Errorf("error parsing template files: %w", err))
+		return
+	}
+
+	err = t.ExecuteTemplate(w, "layout", data)
+	if err != nil {
+		handleHTTPError(w, fmt.Errorf("error executing template: %w", err))
+		return
+	}
+}
+
+func handleHTTPError(w http.ResponseWriter, err error) {
+	log.Println(err)
+	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
 func parseConfiguration() configuration {
@@ -173,6 +261,7 @@ func main() {
 
 	// Set up router
 	r := mux.NewRouter()
+	r.Use(SessionAuthMiddleware)
 	r.Handle("/", http.RedirectHandler("/buckets", http.StatusPermanentRedirect)).Methods(http.MethodGet)
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.FS(statics)))).Methods(http.MethodGet)
 	r.Handle("/buckets", s3manager.HandleBucketsView(s3, templates, configuration.AllowDelete)).Methods(http.MethodGet)
@@ -187,6 +276,8 @@ func main() {
 	if configuration.AllowDelete {
 		r.Handle("/api/buckets/{bucketName}/objects/{objectName:.*}", s3manager.HandleDeleteObject(s3)).Methods(http.MethodDelete)
 	}
+
+	r.HandleFunc("/login", HandleLoginView(templates)).Methods("GET", "POST")
 
 	lr := logging.Handler(os.Stdout)(r)
 	srv := &http.Server{

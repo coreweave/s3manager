@@ -1,0 +1,26 @@
+{{ define "content" }}
+<div class="container">
+    <div class="section">
+        <div class="row">
+            <form action="/login" method="post" class="col s12">
+                <div class="row">
+                    <div class="input-field col s12">
+                        <input id="username" type="text" name="username" class="validate" required>
+                        <label for="username">Username</label>
+                    </div>
+                    <div class="input-field col s12">
+                        <input id="password" type="password" name="password" class="validate" required>
+                        <label for="password">Password</label>
+                    </div>
+                    <div class="col s12">
+                        <button type="submit" class="waves-effect waves-light btn">Login</button>
+                    </div>
+                    {{ if .ErrorMsg }}
+                    <p class="error-message">{{ .ErrorMsg }}</p>
+                    {{ end }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{{ end }}
