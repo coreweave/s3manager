@@ -17,6 +17,6 @@ spec:
         pathType: ImplementationSpecific
   tls:
     - hosts:
-      - {{ template "s3manager.ingress_hostname" . }}
+      - {{ template "s3manager.ingress_host" . }}
       secretName: {{ .Release.Name }}-s3manager-tls
 {{- end }}

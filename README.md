@@ -53,7 +53,7 @@ The application can be configured with the following environment variables:
 
 ### Deploy to Kubernetes
 
-You can deploy s3manager to a Kubernetes cluster as a [Helm chart](https://github.com/harubaru/s3manager/tree/main/charts/s3manager).]
+You can deploy s3manager to a Kubernetes cluster as a [Helm chart](https://github.com/harubaru/s3manager/tree/main/charts/s3manager).
 
 ## Development
 
