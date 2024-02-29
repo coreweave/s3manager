@@ -1,0 +1,1 @@
+You will be able to access s3manager at https://{{ .Release.Name }}.{{ .Release.Namespace }}.{{ .Values.nodeSelector.region | lower }}.ingress.coreweave.cloud shortly.
