@@ -5,6 +5,7 @@ go 1.21.6
 require (
 	github.com/cloudlena/adapters v0.0.0-20240204125410-ff87ff6b0d9f
 	github.com/gorilla/mux v1.8.1
+	github.com/gorilla/sessions v1.2.2
 	github.com/matryer/is v1.4.1
 	github.com/minio/minio-go/v7 v7.0.66
 	github.com/spf13/viper v1.18.2
@@ -14,6 +15,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.6 // indirect

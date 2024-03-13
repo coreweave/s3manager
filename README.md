@@ -38,6 +38,9 @@ The application can be configured with the following environment variables:
 - `SSE_TYPE`: Specified server side encrpytion (defaults blank) Valid values can be `SSE`, `KMS`, `SSE-C` all others values don't enable the SSE
 - `SSE_KEY`: The key needed for SSE method (only for `KMS` and `SSE-C`)
 - `TIMEOUT`: The read and write timout in seconds (default to `600` - 10 minutes)
+- `SESSION_KEY`: The session key for setting up the session store. Must be a randomly generated string of 32 characters.
+- `USER`: The username for authenticating.
+- `PASSWORD`: The password for authenticating.
 
 ### Build and Run Locally
 
@@ -50,7 +53,7 @@ The application can be configured with the following environment variables:
 
 ### Deploy to Kubernetes
 
-You can deploy s3manager to a Kubernetes cluster using the [Helm chart](https://github.com/sergeyshevch/s3manager-helm).
+You can deploy s3manager to a Kubernetes cluster as a [Helm chart](https://github.com/harubaru/s3manager/tree/main/charts/s3manager).
 
 ## Development
 
